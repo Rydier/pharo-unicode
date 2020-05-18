@@ -29,11 +29,15 @@ UnicodeDUCETData class >> addCEFrom: allKeysStream to: collateTable [
 	<collElement> := '[' <alt> <char> '.' <char> '.' <char> ('.' <char>)* ']'
 	<alt>         := '*' | '.'"
 	codePoints := OrderedCollection new.
+	"Skip EOF entry if detected"
+	(allKeysStream peekFor: $#)
+		ifTrue: [
+			^((allKeysStream upTo: Character lf) endsWith: 'EOF') ifFalse: [self error: 'Change in collation file format' ] ].
 	[allKeysStream peekFor: $;] 
 		whileFalse: [ codePoints add: (Number readFrom: allKeysStream base: 16).
 	"Skip next char if space"
 	(allKeysStream peekFor: Character space)].
-	(allKeysStream peekFor: Character space) ifFalse: [ self error: 'Strange format'].
+	(allKeysStream peekFor: Character space) ifFalse: [ self error: 'Change in collation file format' ].
 
 	newSequence := self sequenceFrom: allKeysStream.
 	element := collateTable.
@@ -129,13 +133,17 @@ UnicodeDUCETData class >> import: anAllKeysStream [
 	allKeysStream := (ZnClient new
 		streaming: true;
 		get: 'http://www.unicode.org/Public/UCA/latest/allkeys.txt') ascii.
-	"Skip properties preceding entries"
-	[ '#@' includes: allKeysStream peek ]
-		whileTrue: [ allKeysStream upTo: Character lf ].
+	"Skip properties preceding entries, and blank lines"
+	[|firstChar|
+		firstChar := allKeysStream peek.
+		('#@' includes: firstChar) or: [firstChar = Character lf]]
+			whileTrue: [ allKeysStream upTo: Character lf ].
 	allKeysStream next.
 	collateTable := CollateEntry new setSequence: EmptyElement.
 	[ allKeysStream atEnd ]
-		whileFalse: [ self addCEFrom: allKeysStream to: collateTable ].
+		whileFalse: [ "Skip empty lines"
+			(allKeysStream peekFor: Character lf)   
+				ifFalse: [self addCEFrom: allKeysStream to: collateTable ]].
 	(self checkWellFormedness: collateTable) 
 		ifFalse: [^self error: 'CollateTable is no longer well formed after our adjustments, fix, or fall back to using an older Unicode version'].
 	^collateTable minimize.
@@ -176,7 +184,9 @@ UnicodeDUCETData class >> sequenceFrom: aCEStream [
 		aCEStream next = $] ifFalse: [ self error: 'Invalid file' ].
 		collateElements add: { level1. level2. level3. weight }].
 	"Skip to next line"
-	aCEStream upTo: Character lf.
+	aCEStream 
+		upTo: Character lf;
+		next.
 	^CollateSequence fromElements:  collateElements.
 
 ]

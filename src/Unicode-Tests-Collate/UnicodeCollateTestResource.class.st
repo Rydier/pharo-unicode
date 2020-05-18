@@ -24,8 +24,13 @@ UnicodeCollateTestResource >> getNonIgnorableRaw [
 			[ self nonIgnorablePath asFileReference
 				binaryReadStreamDo: [ :bin | (ZnCharacterReadStream on: bin) upToEnd ] ]
 		ifFalse:
-			[ (self getRaw
-				memberNamed: (FileSystem memory stringFromPath: self nonIgnorablePath)) contents ]
+			[ |zipExtract|
+				zipExtract := (self getRaw
+				memberNamed: (FileSystem memory stringFromPath: self nonIgnorablePath)) contents.
+				self nonIgnorablePath parent asFileReference ensureCreateDirectory.
+				self nonIgnorablePath asFileReference 	
+					binaryWriteStreamDo: [:nonIgnorableTestFile | nonIgnorableTestFile nextPutAll: zipExtract].
+				zipExtract asString ]
 ]
 
 { #category : #accessing }
@@ -41,8 +46,13 @@ UnicodeCollateTestResource >> getShiftedRaw [
 			[ self shiftedPath asFileReference
 				binaryReadStreamDo: [ :bin | (ZnCharacterReadStream on: bin) upToEnd ] ]
 		ifFalse:
-			[ (self getRaw
-				memberNamed: (FileSystem memory stringFromPath: self shiftedPath)) contents ]
+			[ |zipExtract|
+				zipExtract := (self getRaw
+				memberNamed: (FileSystem memory stringFromPath: self shiftedPath)) contents.
+				self nonIgnorablePath parent asFileReference ensureCreateDirectory.
+				self nonIgnorablePath asFileReference 	
+					binaryWriteStreamDo: [:nonIgnorableTestFile | nonIgnorableTestFile nextPutAll: zipExtract].
+				zipExtract asString ]
 ]
 
 { #category : #accessing }

@@ -12,6 +12,12 @@ Class {
 	#category : #'Unicode-Tests-Collate'
 }
 
+{ #category : #accessing }
+UnicodeDUCETCollateTests class >> defaultTimeLimit [
+	"If this is our first time running collate tests, we may have to download the collation data, which can take a while"
+	^20 seconds
+]
+
 { #category : #resources }
 UnicodeDUCETCollateTests class >> resources [
 	^ {UnicodeCollateTestResource} 
